@@ -75,9 +75,8 @@ def main() -> None:
             print(f"Section {connector.name} matches current Wi-Fi")
             res = connector.send_request()
             print(res.status_code)
-            print("Failure" in str(res.content))
-        else:
-            print(f"Section {connector.name} is invalid")
+            return
+        print("No section matches current Wi-Fi")
 
 
 if __name__ == "__main__":
