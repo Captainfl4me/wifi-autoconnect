@@ -1,2 +1,4 @@
-src/config.ini
+src/config.json
 /venv
+/dist
+/build

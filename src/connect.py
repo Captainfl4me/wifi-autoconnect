@@ -1,32 +1,39 @@
-from configparser import SectionProxy, ConfigParser
+from json import load
 from enum import Enum
 from subprocess import check_output
 from re import findall, RegexFlag
+from os import path
+from requests import post, Response
 
 
 class UrlMethod(Enum):
     POST = "POST"
 
 
+def json_decoder(json_dict: dict):
+    """
+    JSON decoder
+    :param json_dict:
+    :return:
+    """
+    if 'method' in json_dict:
+        json_dict['method'] = UrlMethod(json_dict['method'])
+    if 'name' in json_dict:
+        return Connector(json_dict['name'], json_dict['url'], json_dict['SSID'], json_dict['method'], json_dict['body'])
+    return json_dict
+
+
 class Connector:
-    def __init__(self, section: SectionProxy) -> None:
-        self._section = section
+    def __init__(self, name: str, url: str, ssid: str, method: UrlMethod, body: dict) -> None:
+        self._name = name
+        self._url = url
+        self._SSID = ssid
+        self._method = method
+        self._body = body
 
-    def check_integrity(self) -> bool:
-        """
-        Check if the section has all the required fields
-        :return: bool
-        """
-        integrity = ('SSID' in self._section
-                     and 'URL' in self._section
-                     and 'METHOD' in self._section
-                     and 'USERNAME' in self._section
-                     and 'PASSWORD' in self._section)
-
-        integrity = integrity and (self._section["SSID"] != '')
-        integrity = integrity and (self._section["URL"] != '')
-        integrity = integrity and (self._section["METHOD"] != '' and self._section["METHOD"] in UrlMethod.__members__)
-        return integrity
+    @property
+    def name(self) -> str:
+        return self._name
 
     def does_match_current_wifi(self) -> bool:
         """
@@ -36,7 +43,15 @@ class Connector:
         netsh_interfaces = check_output('netsh wlan show interfaces').decode("cp850")
         ssid_match = findall(r'^\s*SSID\s*.:\s([^\n\r]+)', netsh_interfaces, RegexFlag.MULTILINE | RegexFlag.DOTALL)
         ssid = ssid_match[0] if len(ssid_match) > 0 else None
-        return ssid is not None and ssid == self._section["SSID"]
+        return ssid is not None and ssid == self._SSID
+
+    def send_request(self) -> Response:
+        """
+        Send request to URL with body
+        :return:
+        """
+        if self._method is UrlMethod.POST:
+            return post(self._url, self._body)
 
 
 def main() -> None:
@@ -46,20 +61,23 @@ def main() -> None:
     """
 
     # Read config file
-    config = ConfigParser()
-    if not config.read('config.ini'):
-        print("Config file not found! Please create a config.ini file.")
-        exit(1)
+    if not path.isfile('config.json'):
+        print("Config file not found")
+        return
+
+    with open('config.json') as config_file:
+        config = load(config_file, object_hook=json_decoder)
 
     # Get all sections
-    sections = config.sections()
-    for section in sections:
-        connector = Connector(config[section])
-        if connector.check_integrity():
-            if connector.does_match_current_wifi():
-                print(f"Section {section} matches current Wi-Fi")
+    for connector in config["sections"]:
+        connector: Connector = connector
+        if connector.does_match_current_wifi():
+            print(f"Section {connector.name} matches current Wi-Fi")
+            res = connector.send_request()
+            print(res.status_code)
+            print("Failure" in str(res.content))
         else:
-            print(f"Section {section} is invalid")
+            print(f"Section {connector.name} is invalid")
 
 
 if __name__ == "__main__":
