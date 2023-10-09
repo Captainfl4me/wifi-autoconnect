@@ -1,5 +1,7 @@
 src/config.json
+
 /venv
+/env
+
 /dist
 /build
-*.spec
