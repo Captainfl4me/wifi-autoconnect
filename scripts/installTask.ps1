@@ -10,4 +10,6 @@ $trigger.Subscription =
 "@
 $trigger.Enabled = $True
 
-Register-ScheduledTask -TaskName $taskname -Trigger $trigger -Action $action
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries
+
+Register-ScheduledTask -TaskName $taskname -Trigger $trigger -Action $action -Settings $settings
