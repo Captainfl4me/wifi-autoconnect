@@ -1,6 +1,7 @@
 $taskname = "WIFI_AUTOCONNECT"
-$exePath = $PSScriptRoot+"\connect.exe"
-$action = New-ScheduledTaskAction -Execute $exePath
+$exePath = $PSScriptRoot+"\runConnect.ps1"
+$arg = '-File "'+ $exePath + '"'
+$action = New-ScheduledTaskAction -Execute "Powershell.exe" -Argument $arg -WorkingDirectory $PSScriptRoot
 
 $CIMTriggerClass = Get-CimClass -ClassName MSFT_TaskEventTrigger -Namespace Root/Microsoft/Windows/TaskScheduler:MSFT_TaskEventTrigger
 $trigger = New-CimInstance -CimClass $CIMTriggerClass -ClientOnly
