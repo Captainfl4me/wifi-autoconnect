@@ -1,2 +1,4 @@
 Set objShell = WScript.CreateObject("WScript.Shell")
-objShell.Run "cmd /c ""C:\Users\nicol\Desktop\ESTACA autoconnect\connect.exe""", 0, True
+scriptDir = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
+runCmd = "cmd /c " & """" & scriptDir & "\connect.exe"""
+objShell.Run runCmd, 0, True
